@@ -10,27 +10,51 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch
 
 ## Workflow Overview
 
-1. **변경사항 분석**: Git diff를 통해 변경된 파일과 코드 파악
-2. **요구사항 수집**: 사용자로부터 테스트 범위 및 추가 요구사항 확인
-3. **Playwright 설정 확인**: 프로젝트의 Playwright 설정 상태 확인
-4. **테스트 계획 생성**: Playwright Planner Agent로 마크다운 테스트 계획 작성
-5. **테스트 코드 생성**: Generator Agent로 실행 가능한 테스트 코드 생성
-6. **테스트 실행**: 생성된 테스트 실행 및 결과 리포트
-7. **자동 수정**: 실패한 테스트가 있을 경우 Healer Agent로 자동 수정
+1. **Base 브랜치 확인**: 비교할 기준 브랜치 결정
+2. **변경사항 분석**: Git diff를 통해 변경된 파일과 코드 파악
+3. **요구사항 수집**: 사용자로부터 테스트 범위 및 추가 요구사항 확인
+4. **Playwright 설정 확인**: 프로젝트의 Playwright 설정 상태 확인
+5. **테스트 계획 생성**: Playwright Planner Agent로 마크다운 테스트 계획 작성
+6. **테스트 코드 생성**: Generator Agent로 실행 가능한 테스트 코드 생성
+7. **테스트 실행**: 생성된 테스트 실행 및 결과 리포트
+8. **자동 수정**: 실패한 테스트가 있을 경우 Healer Agent로 자동 수정
 
 ## Instructions
 
-### Step 1: Git 변경사항 분석
+### Step 0: Base 브랜치 결정
 
-먼저 현재 브랜치와 base 브랜치(보통 main/master) 사이의 변경사항을 파악합니다:
+**IMPORTANT: 가장 먼저 사용자에게 어떤 브랜치와 비교할지 물어봐야 합니다.**
+
+먼저 현재 브랜치와 사용 가능한 브랜치 목록을 확인합니다:
 
 ```bash
 # 현재 브랜치 확인
 git branch --show-current
 
-# main/master와의 diff 확인
-git diff main...HEAD --name-only
-git diff main...HEAD --stat
+# 사용 가능한 브랜치 목록 (로컬 + 리모트)
+git branch -a
+```
+
+**사용자에게 질문:**
+"현재 브랜치는 [current-branch]입니다. 어떤 브랜치와 비교하여 변경사항을 분석할까요?"
+
+옵션 예시:
+- main (기본)
+- master
+- develop
+- [다른 브랜치 이름]
+
+사용자가 브랜치를 지정하면 해당 브랜치를 base 브랜치로 사용합니다.
+만약 사용자가 명시하지 않으면, 기본값으로 `main`을 사용합니다 (없으면 `master` 확인).
+
+### Step 1: Git 변경사항 분석
+
+사용자가 지정한 base 브랜치와 현재 브랜치 사이의 변경사항을 파악합니다:
+
+```bash
+# [base-branch]와의 diff 확인 (사용자가 지정한 브랜치 사용)
+git diff [base-branch]...HEAD --name-only
+git diff [base-branch]...HEAD --stat
 ```
 
 변경된 파일들을 분석하여:
