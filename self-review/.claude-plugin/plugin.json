@@ -1,0 +1,9 @@
+{
+  "name": "self-review",
+  "version": "1.0.0",
+  "description": "Self-review workflow for PR preparation with automated branching, iterative code review, and quality assurance",
+  "author": {
+    "name": "Pablo",
+    "email": "pablo@example.com"
+  }
+}

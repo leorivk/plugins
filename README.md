@@ -56,6 +56,31 @@ PR 전 브랜치 변경사항을 분석하고 Playwright Test Agents로 E2E 테�
 
 자세한 내용은 [Playwright E2E Tester README](./playwright-e2e-tester/README.md)를 참조하세요.
 
+### 🔍 Self-Review
+
+PR 제출 전 철저한 자동화 리뷰와 반복적 개선을 통해 코드를 준비하는 플러그인
+
+**주요 기능:**
+- 자동 브랜치 생성 및 커밋
+- 코드베이스 탐색 및 아키텍처 설계 (feature-dev 활용)
+- 6개 전문 리뷰 에이전트 병렬 실행 (pr-review-toolkit 활용)
+  - code-reviewer, comment-analyzer, pr-test-analyzer
+  - silent-failure-hunter, type-design-analyzer, code-simplifier
+- 이슈가 없을 때까지 자동 수정 및 재검토 반복
+- PR 준비 완료 상태로 만들어 리뷰어 공수 최소화
+
+**설치:**
+```bash
+/plugin install self-review@plugins
+```
+
+**사용:**
+```bash
+/self-review 기능 설명
+```
+
+자세한 내용은 [Self-Review README](./self-review/README.md)를 참조하세요.
+
 ## 디렉토리 구조
 
 ```
@@ -68,6 +93,12 @@ plugins/
 │   ├── skills/
 │   │   └── e2e-test/
 │   │       └── SKILL.md
+│   └── README.md
+├── self-review/                  # Self-Review 플러그인
+│   ├── .claude-plugin/
+│   │   └── plugin.json
+│   ├── commands/
+│   │   └── self-review.md
 │   └── README.md
 └── README.md                     # 이 파일
 ```

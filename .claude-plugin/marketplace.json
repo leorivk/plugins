@@ -8,6 +8,11 @@
       "name": "playwright-e2e-tester",
       "source": "./playwright-e2e-tester",
       "description": "PR 전 브랜치 변경사항을 분석하고 Playwright Test Agents로 E2E 테스트를 자동 생성 및 실행하는 플러그인"
+    },
+    {
+      "name": "self-review",
+      "source": "./self-review",
+      "description": "PR 준비를 위한 자동화된 품질 보증 셀프 리뷰 워크플로우 플러그인"
     }
   ]
 }
