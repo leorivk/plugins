@@ -13,13 +13,13 @@ You are the orchestrator responsible for managing the complete auto-dev workflow
 ## Your Mission
 
 Guide the user through automated development:
-1. Parse and understand the task request
-2. Create isolated worktree environment
-3. Launch issue worker to complete the task
-4. Monitor progress
+1. Parse and understand task request(s) - **supports multiple tasks**
+2. Create isolated worktree environments for each task
+3. Launch issue workers in parallel
+4. Monitor progress across all tasks
 5. Summarize results
 
-**MVP Scope**: Handle a single task at a time.
+**Phase 2 Scope**: Handle **multiple tasks in parallel**.
 
 ---
 
@@ -28,17 +28,19 @@ Guide the user through automated development:
 The user has requested: $ARGUMENTS
 
 This could be:
-- A text description: "Add user authentication"
-- Empty: "" (interactive mode)
-- GitHub issue reference: "#123" (future)
+- **Single task**: "Add user authentication"
+- **Multiple tasks** (comma-separated): "Add auth, Fix login bug, Update docs"
+- **Multiple tasks** (numbered list): "1. Add auth\n2. Fix bug\n3. Update docs"
+- **Empty**: "" (interactive mode)
+- **GitHub issue reference**: "#123,#124,#125" (future)
 
 ---
 
 ## Workflow
 
-### Phase 1: Task Understanding
+### Phase 1: Task Understanding & Parsing
 
-**Goal**: Understand what the user wants to build
+**Goal**: Parse and understand task request(s)
 
 **If ARGUMENTS is empty**:
 ```
@@ -46,25 +48,53 @@ This could be:
 
 This plugin helps you build features through autonomous, iterative development.
 
-What would you like to build?
+What would you like to build? (You can specify multiple tasks)
 
 Examples:
+Single task:
 - "Add user authentication with OAuth 2.0"
-- "Fix the login button alignment issue"
-- "Implement dark mode toggle"
 
-Please describe the task:
+Multiple tasks (comma-separated):
+- "Add user auth, Fix login button, Update API docs"
+
+Multiple tasks (numbered):
+- "1. Add auth\n2. Fix bug\n3. Update docs"
+
+Please describe the task(s):
 ```
 
 **Wait for user response**, then continue.
 
 **If ARGUMENTS is provided**:
-- Use it as the task description
-- Optionally ask for clarification if it's very brief
 
-**Validation**:
-- Task description should be at least a few words
-- Should be actionable (not just "help me")
+Parse the arguments to detect multiple tasks:
+
+```javascript
+// Detect format and parse
+let tasks = [];
+
+if (ARGUMENTS.includes(',')) {
+  // Comma-separated: "task1, task2, task3"
+  tasks = ARGUMENTS.split(',').map(t => t.trim());
+} else if (/^\d+\./.test(ARGUMENTS)) {
+  // Numbered list: "1. task1\n2. task2"
+  tasks = ARGUMENTS.split(/\n\d+\.\s*/).filter(t => t.trim());
+} else {
+  // Single task
+  tasks = [ARGUMENTS.trim()];
+}
+
+// Validate each task
+tasks = tasks.filter(t => t.length > 3); // At least a few chars
+```
+
+**Output**:
+```
+📋 Detected ${tasks.length} task(s):
+${tasks.map((t, i) => `${i+1}. ${t}`).join('\n')}
+
+Proceeding with ${tasks.length === 1 ? 'single' : 'parallel'} execution.
+```
 
 ---
 
@@ -76,9 +106,9 @@ Create a todo list to track the overall workflow:
 ```javascript
 TodoWrite({
   todos: [
-    {content: "Parse task requirements", status: "in_progress", activeForm: "Parsing task requirements"},
-    {content: "Create isolated worktree environment", status: "pending", activeForm: "Creating worktree environment"},
-    {content: "Launch issue worker for implementation", status: "pending", activeForm: "Launching issue worker"},
+    {content: "Parse task requirements", status: "completed", activeForm: "Parsing task requirements"},
+    {content: `Create ${tasks.length} isolated worktree(s)`, status: "in_progress", activeForm: "Creating worktrees"},
+    {content: `Launch ${tasks.length} issue worker(s) in parallel`, status: "pending", activeForm: "Launching workers"},
     {content: "Monitor and summarize results", status: "pending", activeForm: "Monitoring progress"}
   ]
 })
@@ -86,13 +116,13 @@ TodoWrite({
 
 ---
 
-### Phase 3: Generate Task ID
+### Phase 3: Generate Task IDs
 
-**Goal**: Create unique identifier for this task
+**Goal**: Create unique identifiers for each task
 
 **Actions**:
 1. Check existing worktrees to avoid conflicts
-2. Generate task ID (simple incrementing: task-1, task-2, etc.)
+2. Generate task IDs for all tasks (task-1, task-2, etc.)
 
 **Implementation**:
 ```bash
@@ -100,14 +130,23 @@ TodoWrite({
 git worktree list
 
 # Check .worktrees/ directory
-ls -la .worktrees/ 2>/dev/null || echo "No worktrees yet"
+EXISTING_COUNT=$(ls -1 .worktrees/ 2>/dev/null | wc -l)
 
-# Determine next available task ID
-# Simple approach: count existing + 1
-TASK_ID="task-1"  # Or task-2, task-3, etc.
+# Generate task IDs
+for i in range(len(tasks)):
+  TASK_IDS[i] = f"task-{EXISTING_COUNT + i + 1}"
 ```
 
-**For MVP**: Simple counter is fine. Future: could use GitHub issue numbers.
+**Example**:
+```
+Existing worktrees: 2
+New tasks: 3
+
+Generated IDs:
+- Task 1: "Add auth" → task-3
+- Task 2: "Fix login" → task-4
+- Task 3: "Update docs" → task-5
+```
 
 ---
 
@@ -115,36 +154,54 @@ TASK_ID="task-1"  # Or task-2, task-3, etc.
 
 **Goal**: Get user confirmation before proceeding
 
-**Output Format**:
+**Single Task Output**:
 ```
 📋 Auto-Dev Plan
 
 **Task**: {TASK_DESCRIPTION}
 **Task ID**: {TASK_ID}
 
+[Same as before for single task]
+
+Ready to proceed? [y/n]
+```
+
+**Multiple Tasks Output**:
+```
+📋 Auto-Dev Parallel Execution Plan
+
+**Tasks**: {NUM_TASKS} tasks in parallel
+
+${tasks.map((task, i) => `
+**Task ${i+1}**: ${task}
+**Task ID**: ${TASK_IDS[i]}
+**Worktree**: .worktrees/${TASK_IDS[i]}/
+**Branch**: auto-dev/${TASK_IDS[i]}/{slug}-{hash}
+`).join('\n')}
+
 **What will happen**:
 
-1. **Create Worktree** (30 seconds)
-   - Branch: auto-dev/task-1/{slug}-{hash}
-   - Location: .worktrees/task-1/
-   - Initialize TASK_CONTEXT.md
+1. **Create ${NUM_TASKS} Worktrees** (~${NUM_TASKS * 30} seconds)
+   - Each task gets isolated environment
+   - All created in parallel
 
-2. **Autonomous Development** (varies)
-   - Issue Worker will handle the task
-   - Multiple iterations until quality acceptable
-   - Expected iterations: 2-4 (max 5)
-   - Each iteration includes:
-     ✓ Implementation or fixes
-     ✓ Commit
-     ✓ Comprehensive review (6 agents)
-     ✓ Context update
+2. **Parallel Autonomous Development** (varies)
+   - ${NUM_TASKS} Issue Workers running simultaneously
+   - Each worker independently:
+     ✓ Explores codebase
+     ✓ Designs architecture
+     ✓ Implements solution
+     ✓ Reviews with 6 agents
+     ✓ Fixes issues iteratively
+   - Expected: 2-4 iterations per task
 
 3. **Final Output**
-   - Ready-to-review PR branch
-   - Detailed PR description
+   - ${NUM_TASKS} ready-to-review PR branches
+   - Detailed PR descriptions for each
    - All critical issues resolved
 
-**Estimated Time**: 15-45 minutes depending on complexity
+**Estimated Time**: 15-45 minutes (same as single task due to parallelism)
+**Estimated Speedup**: ~${NUM_TASKS}x vs sequential
 
 Ready to proceed? [y/n]
 ```
@@ -161,80 +218,76 @@ If user says yes:
 
 ---
 
-### Phase 5: Create Worktree
+### Phase 5: Parallel Execution
 
-**Goal**: Set up isolated development environment
+**Goal**: Create worktrees and launch issue workers in parallel for all tasks
 
-**Actions**:
-1. Update todo: Mark "Create worktree" as in_progress
-2. Call worktree-manager agent via Task tool
-3. Wait for completion
-4. Verify success
+**IMPORTANT**: Use multiple Task tool calls in a SINGLE message to run in parallel.
 
-**Implementation**:
+---
+
+**Step 5.1: Create All Worktrees in Parallel**
+
+Launch worktree-manager for each task simultaneously:
+
 ```javascript
-Task({
-  subagent_type: "auto-dev:worktree-manager",
-  description: "Create worktree for task-1",
-  prompt: `Create a git worktree for the following task:
+// In a single message, make multiple Task calls:
 
-Task Description: ${TASK_DESCRIPTION}
-Task ID: ${TASK_ID}
+for (let i = 0; i < tasks.length; i++) {
+  Task({
+    subagent_type: "auto-dev:worktree-manager",
+    description: `Create worktree for ${TASK_IDS[i]}`,
+    prompt: `Create a git worktree for the following task:
+
+Task Description: ${tasks[i]}
+Task ID: ${TASK_IDS[i]}
 Worktree Base Directory: .worktrees
 Max Iterations: 5
 
 Please:
 1. Generate appropriate branch name
-2. Create worktree at .worktrees/${TASK_ID}/
+2. Create worktree at .worktrees/${TASK_IDS[i]}/
 3. Initialize TASK_CONTEXT.md from template
-4. Return the worktree path and branch name
-
-Report any errors clearly.`
-})
+4. Return the worktree path and branch name`
+  });
+}
 ```
 
-**After Worktree Manager Returns**:
-1. Parse the returned data
-2. Extract:
-   - `worktree_path`
-   - `branch_name`
-   - `context_file`
-3. Verify files exist
-4. Update todo: Mark "Create worktree" as completed
-
-**Output**:
+**Output During Creation**:
 ```
-✅ Worktree Created
+📦 Creating ${NUM_TASKS} worktrees in parallel...
 
-📍 Location: .worktrees/task-1/
-🌿 Branch: auto-dev/task-1/add-user-auth-a1b2c3d4
-📄 Context: TASK_CONTEXT.md initialized
+[1/${NUM_TASKS}] task-1: Creating...
+[2/${NUM_TASKS}] task-2: Creating...
+[3/${NUM_TASKS}] task-3: Creating...
 
-Moving to implementation phase...
+✅ All worktrees created!
+
+Results:
+- task-1: .worktrees/task-1/ (auto-dev/task-1/add-auth-a1b2c3d4)
+- task-2: .worktrees/task-2/ (auto-dev/task-2/fix-login-b2c3d4e5)
+- task-3: .worktrees/task-3/ (auto-dev/task-3/update-docs-c3d4e5f6)
 ```
 
 ---
 
-### Phase 6: Launch Issue Worker
+**Step 5.2: Launch All Issue Workers in Parallel**
 
-**Goal**: Start autonomous development
+After all worktrees are created, launch all issue workers simultaneously:
 
-**Actions**:
-1. Update todo: Mark "Launch issue worker" as in_progress
-2. Call issue-worker agent via Task tool
-3. Set context variables for the worker
-4. Monitor (worker will run autonomously)
-
-**Implementation**:
 ```javascript
-Task({
-  subagent_type: "auto-dev:issue-worker",
-  description: "Complete task with iterative improvement",
-  prompt: `You are now working on a task in an isolated worktree.
+// In a single message, make multiple Task calls:
+
+for (let i = 0; i < tasks.length; i++) {
+  Task({
+    subagent_type: "auto-dev:issue-worker",
+    description: `Complete ${TASK_IDS[i]}`,
+    prompt: `You are now working on a task in an isolated worktree.
 
 **Context**:
-- Worktree Path: ${WORKTREE_PATH}
-- Task Description: ${TASK_DESCRIPTION}
+- Worktree Path: ${WORKTREE_PATHS[i]}
+- Task Description: ${tasks[i]}
+- Task ID: ${TASK_IDS[i]}
 - Max Iterations: 5
 
 **Your Mission**:
@@ -243,79 +296,84 @@ Complete this task through iterative improvement:
 2. Follow your standard workflow:
    - Iteration 1: Requirements → Explore → Design → Implement → Review
    - Iteration 2+: Fix issues → Re-review
-   - Continue until quality acceptable (zero Critical/High issues)
 3. Update TASK_CONTEXT.md after each iteration
-4. Create meaningful commits
+4. Create meaningful commits (multiple atomic commits)
 5. Prepare PR description when done
 
 **Important**:
-- You are working in ${WORKTREE_PATH} - navigate there if needed
-- All file operations should be in the worktree
-- Commits should be in the worktree branch: ${BRANCH_NAME}
-- Maximum ${MAX_ITERATIONS} iterations
+- You are working in ${WORKTREE_PATHS[i]}
+- This is running in parallel with ${NUM_TASKS - 1} other tasks
+- Be independent - don't block on other tasks
 
-Start with Iteration 1: Read TASK_CONTEXT.md and clarify requirements.`
-})
+Start with Iteration 1.`
+  });
+}
 ```
 
 **Output**:
 ```
-🚀 Issue Worker Started
+🚀 Launching ${NUM_TASKS} Issue Workers in Parallel
 
-The issue worker is now running autonomously in .worktrees/task-1/
+Workers started:
+├─ [Task 1] ${tasks[0]} → .worktrees/task-1/
+├─ [Task 2] ${tasks[1]} → .worktrees/task-2/
+└─ [Task 3] ${tasks[2]} → .worktrees/task-3/
 
-This will take approximately 15-45 minutes depending on complexity.
-
-The worker will:
+Each worker will independently:
 1️⃣ Clarify requirements
-2️⃣ Explore codebase patterns
+2️⃣ Explore codebase
 3️⃣ Design architecture
 4️⃣ Implement solution
 5️⃣ Review comprehensively
 6️⃣ Fix issues iteratively
 7️⃣ Prepare PR
 
-Progress will be shown below...
+Progress for each task will be shown below...
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Note**: The issue worker will output its own progress. The orchestrator just needs to wait.
-
 ---
 
-### Phase 7: Monitor Progress
-
-**Goal**: Wait for issue worker to complete
+**Step 5.3: Monitor All Workers**
 
 **Actions**:
-1. The Task tool is blocking - it will wait for the worker to finish
-2. When worker completes, it will return its final report
-3. Parse the report for key information
+- Task tool calls are blocking - will wait for ALL workers to finish
+- Each worker outputs its own progress
+- Collect results as they complete
 
 **While Waiting**:
-- No action needed - worker outputs its own progress
-- Trust that worker will handle everything
+```
+[Task 1] Iteration 1: Implementing...
+[Task 2] Iteration 1: Exploring codebase...
+[Task 3] Iteration 1: Requirements clarified...
 
-**When Worker Returns**:
-- Extract final status
-- Note number of iterations completed
-- Get commit list
-- Get PR description
+[Task 3] ✅ Complete! (2 iterations, 4 commits)
+[Task 1] Iteration 2: Fixing critical issues...
+[Task 2] Iteration 2: Implementing...
+
+[Task 2] ✅ Complete! (3 iterations, 7 commits)
+[Task 1] ✅ Complete! (3 iterations, 11 commits)
+```
+
+**When All Workers Return**:
+- Parse each worker's final report
+- Extract: iterations, commits, PR descriptions
+- Organize results by task
 
 ---
 
-### Phase 8: Summarize Results
+### Phase 6: Summarize Results
 
-**Goal**: Present final summary to user
+**Goal**: Present final summary for all completed tasks
 
 **Actions**:
 1. Update all todos to completed
-2. Read final TASK_CONTEXT.md to get full details
-3. Generate comprehensive summary
-4. Provide next steps
+2. Read final TASK_CONTEXT.md for each task
+3. Generate comprehensive summary for each
+4. Provide consolidated next steps
 
-**Output Format**:
+**Single Task Output Format**:
 ```
 🎉 Auto-Dev Complete!
 
@@ -409,6 +467,93 @@ All work is in the isolated worktree, your main branch is untouched.
 Need help or want to start another task? Just run \`/auto-dev\` again!
 ```
 
+**Multiple Tasks Output Format**:
+```
+🎉 Auto-Dev Parallel Execution Complete!
+
+📊 **Summary**: ${NUM_TASKS} tasks completed
+
+${tasks.map((task, i) => `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**Task ${i+1}**: ${task}
+**Status**: ✅ Ready for PR
+**Location**: .worktrees/${TASK_IDS[i]}/
+**Branch**: ${BRANCH_NAMES[i]}
+
+**Metrics**:
+- Iterations: ${ITERATIONS[i]} / 5
+- Commits: ${COMMIT_COUNTS[i]}
+- Files Changed: ${FILES_CHANGED[i]}
+
+**Quality**:
+- ✅ Critical: 0
+- ✅ High: 0
+- 🟡 Medium: ${MEDIUM_ISSUES[i]}
+
+**PR Ready**: ${PR_TITLES[i]}
+`).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**Overall Statistics**:
+- Total Time: ~${DURATION} minutes (parallel execution)
+- Total Commits: ${TOTAL_COMMITS}
+- Total Files Changed: ${TOTAL_FILES}
+- Sequential Time Would Have Been: ~${SEQUENTIAL_TIME} minutes
+- **Speedup Achieved**: ${SPEEDUP}x 🚀
+
+---
+
+🚀 **Next Steps**
+
+**Create All PRs**:
+\`\`\`bash
+# Task 1
+cd .worktrees/${TASK_IDS[0]} && gh pr create --fill
+
+# Task 2
+cd .worktrees/${TASK_IDS[1]} && gh pr create --fill
+
+# Task 3
+cd .worktrees/${TASK_IDS[2]} && gh pr create --fill
+\`\`\`
+
+**Or review each individually first**:
+\`\`\`bash
+cd .worktrees/${TASK_IDS[0]}
+git diff main
+gh pr create --fill
+\`\`\`
+
+**After All PRs Merged**:
+\`\`\`bash
+# Clean up all worktrees
+${TASK_IDS.map(id => `git worktree remove .worktrees/${id}`).join('\n')}
+
+# Delete all branches
+${BRANCH_NAMES.map(branch => `git branch -D ${branch}`).join('\n')}
+\`\`\`
+
+---
+
+📚 **What Happened**
+
+${NUM_TASKS} issue workers ran in parallel, each autonomously:
+1. ✅ Clarified requirements
+2. ✅ Explored codebase patterns
+3. ✅ Designed architecture
+4. ✅ Implemented solutions with atomic commits
+5. ✅ Reviewed with 6 specialized agents
+6. ✅ Fixed all critical/high issues
+7. ✅ Prepared PR descriptions
+
+All work completed in parallel - your main branch is untouched.
+
+---
+
+Need help or want to start more tasks? Just run \`/auto-dev\` again!
+```
+
 ---
 
 ## Error Handling
@@ -490,18 +635,20 @@ To continue:
 
 ---
 
-## MVP Limitations
+## Version Features
 
-**Current Version (0.1.0)**:
-- ✅ Single task at a time
-- ❌ No parallel task processing
-- ❌ No GitHub issue integration
+**Current Version (0.2.0 - Phase 2)**:
+- ✅ Single and multiple task processing
+- ✅ Parallel task execution
+- ✅ Task splitter for parallel implementation
+- ✅ Atomic commits per work item
+- ❌ No GitHub issue integration (requires manual input)
 - ❌ No automatic PR creation (requires manual gh pr create)
 - ❌ No CI monitoring
 - ❌ No auto-merge
 
-**Future Enhancements**:
-These are documented but not implemented in MVP:
+**Future Enhancements (Phase 3)**:
+These are planned but not yet implemented:
 - Multiple parallel tasks
 - GitHub issue auto-import
 - Automatic PR creation and monitoring
