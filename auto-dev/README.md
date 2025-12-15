@@ -5,6 +5,7 @@
 ## 개요
 
 Auto-Dev는 다음을 자동화합니다:
+
 - ✅ **Git Worktree 관리**: 각 작업을 독립적인 환경에서 격리
 - ✅ **반복적 개선**: 이슈가 해결될 때까지 자동으로 리뷰-수정 반복
 - ✅ **컨텍스트 연속성**: 반복 간 상태 유지로 점진적 개선
@@ -36,6 +37,7 @@ auto-dev/
 전체 워크플로우를 조율하는 마스터 에이전트입니다.
 
 **역할**:
+
 - 사용자 요구사항 파싱
 - Worktree Manager 호출하여 격리 환경 생성
 - Issue Worker 실행 및 모니터링
@@ -48,12 +50,14 @@ auto-dev/
 Git worktree 생성 및 관리를 담당합니다.
 
 **역할**:
+
 - 브랜치명 자동 생성 (컨벤션 기반)
 - Git worktree 생성/삭제
 - 환경 초기화 (npm install 등)
 - TASK_CONTEXT.md 파일 생성
 
 **브랜치 네이밍 패턴**:
+
 ```
 auto-dev/task-{number}/{description}-{hash}
 
@@ -63,6 +67,7 @@ auto-dev/task-{number}/{description}-{hash}
 ```
 
 **Worktree 디렉토리 구조**:
+
 ```
 프로젝트-root/
 ├── .git/
@@ -81,6 +86,7 @@ auto-dev/task-{number}/{description}-{hash}
 단일 이슈를 완료까지 책임지는 핵심 에이전트입니다.
 
 **역할**:
+
 - TASK_CONTEXT.md 읽기/쓰기
 - 반복 루프 실행 (continuous-claude 패턴)
 - 코드베이스 탐색 및 설계
@@ -125,6 +131,7 @@ while (이슈가 남아있고 && 최대 반복 횟수 미만):
 # Task: [작업 설명]
 
 ## Metadata
+
 - Task ID: task-1
 - Branch: auto-dev/task-1/add-user-auth-a1b2c3d4
 - Current Iteration: 2
@@ -132,21 +139,26 @@ while (이슈가 남아있고 && 최대 반복 횟수 미만):
 - Started: 2024-01-15T10:30:00Z
 
 ## Goal
+
 [최종 목표 설명]
 
 ## Iteration History
 
 ### Iteration 1 (Completed)
+
 **What was done**:
+
 - 요구사항 분석 완료
 - 코드베이스 탐색: 기존 인증 패턴 발견 (src/auth/)
 - 아키텍처 설계: JWT 기반 OAuth 2.0 선택
 - 구현: 기본 인증 스캐폴딩 추가
 
 **Commits**:
+
 - `a1b2c3d` feat: Add OAuth authentication scaffolding
 
 **Review Results**:
+
 - Critical: 3 issues
   - auth.ts:45 - 에러 처리 누락
   - auth.ts:67 - 보안: 토큰 검증 미흡
@@ -159,6 +171,7 @@ while (이슈가 남아있고 && 최대 반복 횟수 미만):
   - 로깅 추가 필요
 
 **Next Actions**:
+
 - [ ] CRITICAL: auth.ts:45 에러 처리 추가
 - [ ] CRITICAL: auth.ts:67 토큰 검증 강화
 - [ ] CRITICAL: auth.ts:89 SQL injection 방어
@@ -166,25 +179,31 @@ while (이슈가 남아있고 && 최대 반복 횟수 미만):
 - [ ] HIGH: 타입 정의 완성
 
 ### Iteration 2 (In Progress)
+
 **Current Focus**:
+
 - Critical 이슈 3개 수정 중
 
 **Notes**:
+
 - auth.ts:45: try-catch 추가하고 적절한 에러 반환
 - auth.ts:67: jwt.verify() 옵션 강화
 - auth.ts:89: Prepared statements 사용
 
 ## Current Status
+
 - **Phase**: Iteration 2 - Fixing Critical Issues
 - **Blocked**: No
 - **Ready for Review**: No
 
 ## Decision Log
+
 - [Iteration 1] JWT vs Session: JWT 선택 (stateless API 요구사항)
 - [Iteration 1] OAuth Provider: OAuth 2.0 표준 준수
 - [Iteration 2] Error Handling: Custom error classes 도입
 
 ## Related Files
+
 - src/auth/login.ts
 - src/auth/register.ts
 - src/auth/middleware.ts
@@ -193,6 +212,7 @@ while (이슈가 남아있고 && 최대 반복 횟수 미만):
 ```
 
 **AI 에이전트 활용 가이드라인**:
+
 - **명확한 섹션 구분**: 각 섹션은 특정 목적 (히스토리, 현재 상태, 다음 액션)
 - **실행 가능한 체크리스트**: `[ ]` 형식으로 다음 할 일 명시
 - **구체적인 컨텍스트**: 파일명, 라인 번호, 구체적 문제 설명
@@ -472,6 +492,7 @@ cp -r auto-dev ~/.claude/plugins/
 **원인**: 브랜치명 충돌 또는 권한 문제
 
 **해결**:
+
 - 수동으로 브랜치 삭제: `git branch -D auto-dev/task-1/...`
 - Worktree 정리: `git worktree prune`
 
@@ -480,6 +501,7 @@ cp -r auto-dev ~/.claude/plugins/
 **원인**: 일부 이슈가 계속 발견됨
 
 **해결**:
+
 - 최대 반복 횟수 제한 (기본 5회)
 - Medium Priority 이슈는 무시 가능
 - 수동으로 남은 이슈 처리
@@ -489,12 +511,9 @@ cp -r auto-dev ~/.claude/plugins/
 **원인**: 파일 수동 편집 또는 충돌
 
 **해결**:
+
 - 템플릿에서 새로 생성
 - Git에서 이전 버전 복구
-
-## 기여
-
-버그 리포트, 기능 제안, PR 환영합니다!
 
 ## 라이선스
 
