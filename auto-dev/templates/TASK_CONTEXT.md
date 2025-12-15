@@ -165,15 +165,15 @@
 **Phase**: Fixing Critical Issues
 
 **What was done**:
-- Fixed all 3 critical issues from Iteration 1 review
+- Fixed all 3 critical issues from Iteration 1 review (3 separate commits)
 - Added error handling in auth.ts:45
 - Strengthened token validation in auth.ts:67
 - Applied prepared statements in auth.ts:89
 
 **Commits**:
-- `a1b2c3d` fix: Add comprehensive error handling to auth module
-- `b2c3d4e` security: Strengthen JWT token validation
-- `c3d4e5f` security: Prevent SQL injection in user queries
+- `a1b2c3d` fix: Add error handling to password comparison
+- `b2c3d4e` fix: Validate JWT token expiration properly
+- `c3d4e5f` fix: Prevent SQL injection with prepared statements
 
 **Review Results**:
 - **Critical** (0): ✅ All resolved

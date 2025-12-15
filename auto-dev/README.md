@@ -366,13 +366,16 @@ Issue Worker - Iteration 3:
 
 [사용자 확인]
 
-✍️ 구현 중...
-   ✓ src/auth/login.ts 생성
-   ✓ src/auth/register.ts 생성
-   ✓ src/auth/middleware.ts 생성
-   ✓ tests/auth.test.ts 생성
+✍️ 구현 중 (작업 단위별로 커밋)...
 
-✓ 커밋 완료: feat: Add user authentication scaffolding (a1b2c3d)
+Commit 1/6: ✓ feat: Add authentication types and interfaces (a1b2c3d)
+Commit 2/6: ✓ feat: Add User model with password hashing (b2c3d4e)
+Commit 3/6: ✓ feat: Add authentication service (c3d4e5f)
+Commit 4/6: ✓ feat: Add JWT middleware (d4e5f6a)
+Commit 5/6: ✓ feat: Add auth API routes (e5f6a7b)
+Commit 6/6: ✓ test: Add authentication tests (f6a7b8c)
+
+✓ 구현 완료: 6개 커밋 생성
 
 📊 포괄적 리뷰 중 (6 agents 병렬)...
    ✓ code-reviewer: 완료
@@ -398,12 +401,13 @@ Issue Worker - Iteration 3:
 💾 TASK_CONTEXT.md 업데이트 완료
 
 🔄 Phase 3: Iteration 2
-🔧 Critical 이슈 수정 중...
-   ✓ src/auth/login.ts:45 - try-catch 추가
-   ✓ src/auth/login.ts:67 - 토큰 검증 강화
-   ✓ src/auth/register.ts:89 - Prepared statements 적용
+🔧 Critical 이슈 수정 중 (이슈별로 커밋)...
 
-✓ 커밋 완료: fix: Address critical auth issues (b2c3d4e)
+Commit 1/3: ✓ fix: Add error handling to password comparison (1a2b3c4)
+Commit 2/3: ✓ fix: Validate JWT token expiration properly (2b3c4d5)
+Commit 3/3: ✓ fix: Prevent SQL injection with prepared statements (3c4d5e6)
+
+✓ Critical 이슈 수정 완료: 3개 커밋 생성
 
 📊 재리뷰 중...
 
@@ -416,7 +420,12 @@ Issue Worker - Iteration 3:
 [계속...]
 
 🔄 Phase 4: Iteration 3
-🔧 High Priority 이슈 수정 중...
+🔧 High Priority 이슈 수정 중 (이슈별로 커밋)...
+
+Commit 1/2: ✓ test: Add edge case coverage for auth flows (4d5e6f7)
+Commit 2/2: ✓ refactor: Complete AuthResponse type definitions (5e6f7a8)
+
+✓ High Priority 이슈 수정 완료: 2개 커밋 생성
 
 [...]
 
@@ -424,10 +433,25 @@ Issue Worker - Iteration 3:
 
 📝 PR 준비 완료
 
-생성된 커밋:
-  - a1b2c3d feat: Add user authentication scaffolding
-  - b2c3d4e fix: Address critical auth issues
-  - c3d4e5f refactor: Improve auth test coverage
+생성된 커밋 (작업 단위별):
+Iteration 1 - 구현:
+  - a1b2c3d feat: Add authentication types and interfaces
+  - b2c3d4e feat: Add User model with password hashing
+  - c3d4e5f feat: Add authentication service
+  - d4e5f6a feat: Add JWT middleware
+  - e5f6a7b feat: Add auth API routes
+  - f6a7b8c test: Add authentication tests
+
+Iteration 2 - Critical 이슈 수정:
+  - 1a2b3c4 fix: Add error handling to password comparison
+  - 2b3c4d5 fix: Validate JWT token expiration properly
+  - 3c4d5e6 fix: Prevent SQL injection with prepared statements
+
+Iteration 3 - High Priority 이슈 수정:
+  - 4d5e6f7 test: Add edge case coverage for auth flows
+  - 5e6f7a8 refactor: Complete AuthResponse type definitions
+
+총 11개 커밋 (작업 단위별로 분리되어 리뷰 용이)
 
 제안 PR 제목: feat: Add user authentication with OAuth 2.0
 

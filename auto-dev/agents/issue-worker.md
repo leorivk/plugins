@@ -291,67 +291,155 @@ Which approach would you like me to implement?
 
 ---
 
-### Step 4: Implementation
+### Step 4: Implementation (with Incremental Commits)
 
-**Goal**: Implement the chosen architecture
+**Goal**: Implement the chosen architecture in logical units, committing each unit separately
+
+**IMPORTANT**: Create **multiple commits** for different logical units, not one big commit.
 
 **Actions**:
 1. Confirm user's choice
-2. Read all files you'll be modifying
-3. Implement changes following the plan
+2. Break down implementation into logical work units
+3. For each unit:
+   - Read relevant files
+   - Implement the unit
+   - Commit immediately
 4. Follow existing code conventions strictly
 5. Write clear, documented code
 6. Update TodoWrite as you progress
 
-**Implementation Guidelines**:
-- **One logical unit at a time**: Don't try to do everything at once
-- **Follow conventions**: Match existing code style
-- **Add comments**: Explain non-obvious decisions
-- **Handle errors**: Don't leave TODOs for error handling
-- **Write tests**: If project has tests, add them
+**Implementation Strategy**:
 
-**Progress Updates**:
+**Step 4.1: Break Down into Work Units**
+
+Analyze the architecture plan and identify logical units. Examples:
+
 ```
-✍️ Implementation Progress
-
-✓ Created src/auth/middleware.ts - JWT validation middleware
-✓ Created src/auth/service.ts - Authentication business logic
-⏳ Creating src/routes/auth.ts - Auth API endpoints
-⏳ Adding tests in tests/auth.test.ts
+For authentication feature:
+1. Core types and interfaces (types/auth.ts)
+2. Database models (models/User.ts)
+3. Authentication service/business logic (services/auth.ts)
+4. Middleware (middleware/auth.ts)
+5. API routes (routes/auth.ts)
+6. Tests (tests/auth.test.ts)
+7. Documentation (docs/auth.md)
 ```
 
----
+**Categorize by type**:
+- **Foundation**: Types, interfaces, models (commit together)
+- **Core Logic**: Services, utilities (separate commits)
+- **Integration**: Middleware, routes (separate commits)
+- **Quality**: Tests (separate commit)
+- **Documentation**: Docs, comments updates (separate commit)
 
-### Step 5: Create Commit
+**Step 4.2: Implement and Commit Each Unit**
 
-**Goal**: Save progress with meaningful commit message
+For each work unit:
 
-**Actions**:
-1. Review changes: `git diff`
-2. Generate descriptive commit message
-3. Commit all changes
-4. Follow conventional commits if project uses them
+```
+📝 Work Unit: Authentication Middleware
 
-**Commit Format**:
-```bash
-git add .
+1. Read files to modify
+2. Implement the middleware
+3. Verify it compiles/runs
+4. Review changes: git diff
+5. Commit immediately:
+
+git add src/middleware/auth.ts
 git commit -m "$(cat <<'EOF'
-feat: Add user authentication with JWT
+feat: Add JWT authentication middleware
 
-Implement OAuth 2.0 authentication system:
-- JWT token generation and validation
-- Login and registration endpoints
-- Authentication middleware
-- User session management
+Implement middleware for JWT token validation:
+- Extract token from Authorization header
+- Verify token signature and expiration
+- Attach user info to request object
+- Handle authentication errors gracefully
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
+
+6. Move to next unit
 ```
 
-**Record commit in TASK_CONTEXT.md**
+**Commit Message Guidelines**:
+
+```
+Format: <type>: <short description>
+
+Types:
+- feat: New feature or component
+- refactor: Code restructuring
+- test: Adding tests
+- docs: Documentation
+- fix: Bug fix (usually in later iterations)
+
+Examples:
+✓ feat: Add authentication service with login/register
+✓ feat: Add JWT middleware for route protection
+✓ test: Add authentication flow test cases
+✓ docs: Add authentication API documentation
+
+✗ feat: Add authentication (too vague)
+✗ Update files (not descriptive)
+```
+
+**Step 4.3: Progress Tracking**
+
+Show progress with each commit:
+
+```
+✍️ Implementation Progress
+
+Commit 1/6: ✓ feat: Add authentication types and interfaces
+Commit 2/6: ✓ feat: Add User model with password hashing
+Commit 3/6: ✓ feat: Add authentication service
+Commit 4/6: ⏳ feat: Add JWT middleware
+Commit 5/6: ⏳ feat: Add auth API routes
+Commit 6/6: ⏳ test: Add authentication tests
+```
+
+**Step 4.4: Handle Dependencies**
+
+If units have dependencies:
+
+```
+Unit A depends on Unit B:
+1. Implement Unit B first
+2. Commit Unit B
+3. Implement Unit A
+4. Commit Unit A
+
+Example:
+- Middleware depends on Service → Commit Service first
+- Routes depend on Middleware → Commit Middleware first
+```
+
+**Benefits of Multiple Commits**:
+- ✅ Clear git history (each commit = one logical change)
+- ✅ Easier code review (review one component at a time)
+- ✅ Better rollback (can revert specific changes)
+- ✅ Shows progress incrementally
+- ✅ Easier to identify which commit introduced issues
+
+**Final Output**:
+```
+✅ Implementation Complete
+
+Created 6 commits:
+- a1b2c3d feat: Add authentication types and interfaces
+- b2c3d4e feat: Add User model with password hashing
+- c3d4e5f feat: Add authentication service
+- d4e5f6a feat: Add JWT middleware
+- e5f6a7b feat: Add auth API routes
+- f6a7b8c test: Add authentication tests
+
+All commits recorded in TASK_CONTEXT.md
+```
+
+**Record all commits in TASK_CONTEXT.md**
 
 ---
 
@@ -527,62 +615,144 @@ Read TASK_CONTEXT.md to see:
 - What needs to be fixed
 - Priority levels
 
-### Step 2: Fix Issues
+### Step 2: Fix Issues (with Incremental Commits)
+
+**IMPORTANT**: Create **separate commits for each issue or logical group of related issues**, not one big commit.
 
 **Based on user decision**:
 
 **Option 1: Auto-fix Critical + High**
-- Fix all critical issues first
-- Then fix high priority issues
+- Fix critical issues first (one commit per issue or related group)
+- Then fix high priority issues (one commit per issue or related group)
 - Update as you go
 
 **Option 2: Auto-fix Critical only**
 - Focus exclusively on critical issues
-- Leave high priority for later
+- One commit per issue
 
 **Option 3: User-selected fixes**
 - Fix only the specific issues user chose
+- One commit per issue
 
-**Implementation**:
+**Implementation Strategy**:
+
+**Step 2.1: Group Related Issues**
+
+Analyze issues and group if they're closely related:
+
 ```
-🔧 Iteration 2: Fixing Issues
+Critical Issues:
+1. src/auth/service.ts:45 - Error handling (standalone)
+2. src/auth/middleware.ts:67 - Token validation (standalone)
+3. src/routes/auth.ts:89 - SQL injection (standalone)
 
-Fixing Critical Issues:
+High Priority Issues:
+4. tests/* - Test coverage (group all test additions)
+5. types/auth.ts - Type definitions (standalone)
+6. src/auth/service.ts - Error messages (can combine with #1 if same file)
 
-✓ [1/3] src/auth/service.ts:45
-  - Added try-catch around bcrypt.compare()
-  - Proper error logging and handling
-
-✓ [2/3] src/auth/middleware.ts:67
-  - Added explicit expiration check
-  - Verify token.exp < Date.now()
-
-⏳ [3/3] src/routes/auth.ts:89
-  - Replacing string concatenation with prepared statements
-  - Using parameterized queries
+Groups:
+- Issue #1: Standalone commit
+- Issue #2: Standalone commit
+- Issue #3: Standalone commit
+- Issues #4: One commit for all tests
+- Issue #5: Standalone commit
 ```
 
-### Step 3: Commit Fixes
+**Step 2.2: Fix and Commit Each Issue/Group**
 
-```bash
-git add .
+For each issue or group:
+
+```
+🔧 Issue 1/3: src/auth/service.ts:45 - Error handling
+
+1. Read the file
+2. Understand the issue
+3. Implement the fix
+4. Verify it works
+5. Commit immediately:
+
+git add src/auth/service.ts
 git commit -m "$(cat <<'EOF'
-fix: Address critical security issues in authentication
+fix: Add error handling to password comparison
 
-- Add error handling to password comparison
-- Validate JWT token expiration properly
-- Prevent SQL injection with prepared statements
+Add try-catch around bcrypt.compare() to handle:
+- Invalid password format errors
+- Bcrypt internal errors
+- Proper error logging without exposing details
 
-All critical security issues from code review resolved.
+Resolves critical issue from code review.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
+
+6. Move to next issue
 ```
 
-### Step 4: Re-Review
+**Step 2.3: Progress Tracking**
+
+Show progress with each commit:
+
+```
+🔧 Iteration 2: Fixing Issues
+
+Critical Issues:
+Commit 1/3: ✓ fix: Add error handling to password comparison
+Commit 2/3: ✓ fix: Validate JWT token expiration properly
+Commit 3/3: ⏳ fix: Prevent SQL injection with prepared statements
+
+High Priority Issues:
+Commit 4/5: ⏳ test: Add comprehensive auth test coverage
+Commit 5/5: ⏳ refactor: Complete authentication type definitions
+```
+
+**Benefits of Separate Fix Commits**:
+- ✅ Each fix is independently reviewable
+- ✅ Can cherry-pick specific fixes if needed
+- ✅ Easier to identify which fix broke something (if any)
+- ✅ Clear mapping: 1 issue = 1 commit
+- ✅ Better git bisect for debugging
+
+**Commit Message Format for Fixes**:
+
+```
+fix: <what was fixed>
+
+<how it was fixed>
+- Detail 1
+- Detail 2
+
+Resolves <severity> issue: <issue description>
+
+Examples:
+
+✓ fix: Add error handling to password comparison
+✓ fix: Prevent SQL injection in login query
+✓ test: Add edge case coverage for auth flows
+✓ refactor: Complete AuthResponse type definition
+
+✗ fix: Address code review issues (too vague)
+✗ Fix bugs (not descriptive)
+```
+
+**Final Output**:
+```
+✅ All Issues Fixed
+
+Created 5 commits:
+- a1b2c3d fix: Add error handling to password comparison
+- b2c3d4e fix: Validate JWT token expiration properly
+- c3d4e5f fix: Prevent SQL injection with prepared statements
+- d4e5f6a test: Add comprehensive auth test coverage
+- e5f6a7b refactor: Complete authentication type definitions
+
+All commits recorded in TASK_CONTEXT.md
+```
+
+### Step 3: Re-Review
 
 Run the same 6 review agents again to verify fixes:
 
@@ -594,11 +764,11 @@ Run the same 6 review agents again to verify fixes:
 🟢 Medium: 5 (was 8)
 ```
 
-### Step 5: Update Context
+### Step 4: Update Context
 
-Add Iteration 2 results to TASK_CONTEXT.md
+Add Iteration 2 results to TASK_CONTEXT.md with all commit details
 
-### Step 6: Decision Point
+### Step 5: Decision Point
 
 ```
 🤔 Continue or Stop?
