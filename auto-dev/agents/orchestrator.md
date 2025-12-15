@@ -32,7 +32,7 @@ This could be:
 - **Multiple tasks** (comma-separated): "Add auth, Fix login bug, Update docs"
 - **Multiple tasks** (numbered list): "1. Add auth\n2. Fix bug\n3. Update docs"
 - **Empty**: "" (interactive mode)
-- **GitHub issue reference**: "#123,#124,#125" (future)
+- **GitHub issue reference**: "#123,#124,#125" or "#123, #124" (Phase 3)
 
 ---
 
@@ -60,6 +60,9 @@ Multiple tasks (comma-separated):
 Multiple tasks (numbered):
 - "1. Add auth\n2. Fix bug\n3. Update docs"
 
+GitHub issues (Phase 3):
+- "#123" or "#123, #124, #125"
+
 Please describe the task(s):
 ```
 
@@ -72,26 +75,76 @@ Parse the arguments to detect multiple tasks:
 ```javascript
 // Detect format and parse
 let tasks = [];
+let issueNumbers = [];
+let isGitHubIssues = false;
 
-if (ARGUMENTS.includes(',')) {
+// Check for GitHub issue numbers first (Phase 3)
+if (ARGUMENTS.match(/#\d+/)) {
+  // Extract all issue numbers: "#123" or "#123, #124" or "#123,#124"
+  issueNumbers = ARGUMENTS.match(/#\d+/g).map(n => n.replace('#', ''));
+  isGitHubIssues = true;
+
+  console.log(`🔍 Detected ${issueNumbers.length} GitHub issue(s): ${issueNumbers.map(n => '#'+n).join(', ')}`);
+  console.log('📥 Fetching issue details from GitHub...\n');
+
+  // Fetch each issue's details
+  for (let issueNum of issueNumbers) {
+    try {
+      // Use gh CLI to get issue info
+      const issueJson = await bash(`gh issue view ${issueNum} --json number,title,body`);
+      const issue = JSON.parse(issueJson);
+
+      tasks.push({
+        type: 'github_issue',
+        number: issue.number,
+        title: issue.title,
+        body: issue.body || '',
+        description: `${issue.title}\n\n${issue.body || ''}`
+      });
+
+      console.log(`✅ #${issueNum}: ${issue.title}`);
+    } catch (error) {
+      console.error(`❌ Failed to fetch issue #${issueNum}: ${error.message}`);
+      console.log('Skipping this issue.\n');
+    }
+  }
+
+  console.log('');
+
+} else if (ARGUMENTS.includes(',')) {
   // Comma-separated: "task1, task2, task3"
-  tasks = ARGUMENTS.split(',').map(t => t.trim());
+  tasks = ARGUMENTS.split(',').map(t => ({
+    type: 'text',
+    description: t.trim()
+  }));
 } else if (/^\d+\./.test(ARGUMENTS)) {
   // Numbered list: "1. task1\n2. task2"
-  tasks = ARGUMENTS.split(/\n\d+\.\s*/).filter(t => t.trim());
+  tasks = ARGUMENTS.split(/\n\d+\.\s*/).filter(t => t.trim()).map(t => ({
+    type: 'text',
+    description: t.trim()
+  }));
 } else {
   // Single task
-  tasks = [ARGUMENTS.trim()];
+  tasks = [{
+    type: 'text',
+    description: ARGUMENTS.trim()
+  }];
 }
 
 // Validate each task
-tasks = tasks.filter(t => t.length > 3); // At least a few chars
+tasks = tasks.filter(t => t.description && t.description.length > 3);
 ```
 
 **Output**:
 ```
 📋 Detected ${tasks.length} task(s):
-${tasks.map((t, i) => `${i+1}. ${t}`).join('\n')}
+${tasks.map((t, i) => {
+  if (t.type === 'github_issue') {
+    return `${i+1}. [GitHub #${t.number}] ${t.title}`;
+  } else {
+    return `${i+1}. ${t.description}`;
+  }
+}).join('\n')}
 
 Proceeding with ${tasks.length === 1 ? 'single' : 'parallel'} execution.
 ```
@@ -173,7 +226,7 @@ Ready to proceed? [y/n]
 **Tasks**: {NUM_TASKS} tasks in parallel
 
 ${tasks.map((task, i) => `
-**Task ${i+1}**: ${task}
+**Task ${i+1}**: ${task.type === 'github_issue' ? `[#${task.number}] ${task.title}` : task.description}
 **Task ID**: ${TASK_IDS[i]}
 **Worktree**: .worktrees/${TASK_IDS[i]}/
 **Branch**: auto-dev/${TASK_IDS[i]}/{slug}-{hash}
@@ -239,7 +292,8 @@ for (let i = 0; i < tasks.length; i++) {
     description: `Create worktree for ${TASK_IDS[i]}`,
     prompt: `Create a git worktree for the following task:
 
-Task Description: ${tasks[i]}
+Task Description: ${tasks[i].description}
+${tasks[i].type === 'github_issue' ? `GitHub Issue: #${tasks[i].number}` : ''}
 Task ID: ${TASK_IDS[i]}
 Worktree Base Directory: .worktrees
 Max Iterations: 5
@@ -286,7 +340,8 @@ for (let i = 0; i < tasks.length; i++) {
 
 **Context**:
 - Worktree Path: ${WORKTREE_PATHS[i]}
-- Task Description: ${tasks[i]}
+- Task Description: ${tasks[i].description}
+${tasks[i].type === 'github_issue' ? `- GitHub Issue: #${tasks[i].number}` : ''}
 - Task ID: ${TASK_IDS[i]}
 - Max Iterations: 5
 
@@ -298,7 +353,7 @@ Complete this task through iterative improvement:
    - Iteration 2+: Fix issues → Re-review
 3. Update TASK_CONTEXT.md after each iteration
 4. Create meaningful commits (multiple atomic commits)
-5. Prepare PR description when done
+5. ${tasks[i].type === 'github_issue' ? 'Create PR automatically (Phase 3)' : 'Prepare PR description when done'}
 
 **Important**:
 - You are working in ${WORKTREE_PATHS[i]}
@@ -315,9 +370,9 @@ Start with Iteration 1.`
 🚀 Launching ${NUM_TASKS} Issue Workers in Parallel
 
 Workers started:
-├─ [Task 1] ${tasks[0]} → .worktrees/task-1/
-├─ [Task 2] ${tasks[1]} → .worktrees/task-2/
-└─ [Task 3] ${tasks[2]} → .worktrees/task-3/
+├─ [Task 1] ${tasks[0].type === 'github_issue' ? `#${tasks[0].number}: ${tasks[0].title}` : tasks[0].description} → .worktrees/task-1/
+├─ [Task 2] ${tasks[1].type === 'github_issue' ? `#${tasks[1].number}: ${tasks[1].title}` : tasks[1].description} → .worktrees/task-2/
+└─ [Task 3] ${tasks[2].type === 'github_issue' ? `#${tasks[2].number}: ${tasks[2].title}` : tasks[2].description} → .worktrees/task-3/
 
 Each worker will independently:
 1️⃣ Clarify requirements

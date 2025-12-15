@@ -34,6 +34,12 @@ When you run `/auto-dev`, it will:
 # Multiple tasks (numbered list) - Phase 2
 /auto-dev "1. Add authentication\n2. Fix bug\n3. Update docs"
 
+# GitHub issue (Phase 3) - single issue
+/auto-dev "#123"
+
+# GitHub issues (Phase 3) - multiple issues
+/auto-dev "#123, #124, #125"
+
 # Interactive mode (will prompt for task)
 /auto-dev
 ```

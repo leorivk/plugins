@@ -947,6 +947,62 @@ gh pr create --title "feat: Add user authentication" --body "..."
 The worktree will remain available until you explicitly remove it.
 ```
 
+### Step 4: Create Pull Request (Phase 3)
+
+**ONLY if task came from GitHub issue** (check if issue number was provided in initial context)
+
+If GitHub issue number was provided, automatically create PR:
+
+**Action**:
+```javascript
+// Check if this is a GitHub issue task
+if (GITHUB_ISSUE_NUMBER) {
+  Task({
+    subagent_type: "auto-dev:pr-manager",
+    description: "Create PR for completed task",
+    prompt: `Create a pull request for the completed task.
+
+Task Description: ${TASK_DESCRIPTION}
+Issue Number: ${GITHUB_ISSUE_NUMBER}
+Branch Name: ${CURRENT_BRANCH}
+Base Branch: main
+Work Summary: ${SUMMARY_OF_CHANGES}
+
+Context from TASK_CONTEXT.md:
+${RELEVANT_CONTEXT_FROM_FILE}
+
+Please:
+1. Analyze git history to understand changes
+2. Create appropriate PR title (feat/fix/refactor)
+3. Create comprehensive PR body with summary, changes, testing info
+4. Link to GitHub issue #${GITHUB_ISSUE_NUMBER}
+5. Push branch if not already pushed
+6. Create the PR using gh CLI
+7. Return the PR URL`
+  });
+}
+```
+
+**Output**:
+```
+🔗 Creating Pull Request...
+
+[PR Manager agent output]
+
+✅ Pull Request Created!
+🔗 https://github.com/owner/repo/pull/456
+
+**Next Steps**:
+- Review the PR on GitHub
+- Wait for CI checks to complete
+- Request team review if needed
+- Merge when ready
+```
+
+**If NOT a GitHub issue task**:
+- Skip this step
+- User creates PR manually using Step 3 guidance
+
 ---
 
 ## Error Handling
