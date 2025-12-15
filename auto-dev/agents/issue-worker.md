@@ -291,152 +291,186 @@ Which approach would you like me to implement?
 
 ---
 
-### Step 4: Implementation (with Incremental Commits)
+### Step 4: Implementation (with Parallel Execution & Incremental Commits)
 
-**Goal**: Implement the chosen architecture in logical units, committing each unit separately
+**Goal**: Implement the chosen architecture using parallel execution stages, with atomic commits per work item
 
-**IMPORTANT**: Create **multiple commits** for different logical units, not one big commit.
+**IMPORTANT**: Use Task Splitter to create execution plan, then implement stage-by-stage with individual commits.
 
 **Actions**:
 1. Confirm user's choice
-2. Break down implementation into logical work units
-3. For each unit:
-   - Read relevant files
-   - Implement the unit
-   - Commit immediately
-4. Follow existing code conventions strictly
-5. Write clear, documented code
-6. Update TodoWrite as you progress
+2. Call Task Splitter to create execution plan
+3. Execute stages sequentially, items within stage in parallel
+4. Commit each work item individually
+5. Update TodoWrite as you progress
 
-**Implementation Strategy**:
+---
 
-**Step 4.1: Break Down into Work Units**
+**Step 4.1: Get Execution Plan from Task Splitter**
 
-Analyze the architecture plan and identify logical units. Examples:
+Call the task-splitter agent to analyze the task and create a parallel execution plan:
+
+```javascript
+Task({
+  subagent_type: "auto-dev:task-splitter",
+  description: "Create parallel execution plan",
+  prompt: `Analyze this task and create a parallel execution plan.
+
+**Task Description**: ${TASK_DESCRIPTION}
+
+**Architecture Plan**: ${CHOSEN_ARCHITECTURE}
+
+**Codebase Context**:
+${EXPLORATION_FINDINGS}
+
+Please:
+1. Identify all work items needed
+2. Analyze dependencies between items
+3. Group into parallel execution stages
+4. Return structured execution plan
+
+For each work item, specify:
+- Files to create/modify
+- Implementation details
+- Dependencies
+- Estimated complexity
+
+Return a clear, actionable plan.`
+})
+```
+
+**After Task Splitter Returns**:
+
+Parse the execution plan to extract:
+- Total number of stages
+- Work items per stage
+- Dependencies
+- Expected speedup
+
+---
+
+**Step 4.2: Execute Stages Sequentially**
+
+For each stage in the execution plan:
 
 ```
-For authentication feature:
-1. Core types and interfaces (types/auth.ts)
-2. Database models (models/User.ts)
-3. Authentication service/business logic (services/auth.ts)
-4. Middleware (middleware/auth.ts)
-5. API routes (routes/auth.ts)
-6. Tests (tests/auth.test.ts)
-7. Documentation (docs/auth.md)
+📊 Stage ${STAGE_NUMBER}: ${STAGE_NAME} (${NUM_ITEMS} parallel items)
+
+Items in this stage:
+${LIST_OF_ITEMS}
+
+Starting parallel implementation...
 ```
 
-**Categorize by type**:
-- **Foundation**: Types, interfaces, models (commit together)
-- **Core Logic**: Services, utilities (separate commits)
-- **Integration**: Middleware, routes (separate commits)
-- **Quality**: Tests (separate commit)
-- **Documentation**: Docs, comments updates (separate commit)
+**For MVP**: Implement items sequentially (parallel execution in future version)
 
-**Step 4.2: Implement and Commit Each Unit**
+**For each item in stage**:
+1. Announce which item you're working on
+2. Read relevant files
+3. Implement the item following the plan
+4. Review changes: `git diff`
+5. Commit immediately (see Step 4.3)
+6. Mark item complete
 
-For each work unit:
-
+**Progress Updates**:
 ```
-📝 Work Unit: Authentication Middleware
+✍️ Stage 2: Core Services
 
-1. Read files to modify
-2. Implement the middleware
-3. Verify it compiles/runs
-4. Review changes: git diff
-5. Commit immediately:
+[1/2] JWT Token Service
+  ✓ Created src/services/TokenService.ts
+  ✓ Implemented token generation
+  ✓ Implemented token verification
+  ✓ Committed: a1b2c3d
 
-git add src/middleware/auth.ts
+[2/2] Token Service Tests
+  ✓ Created tests/services/TokenService.test.ts
+  ✓ Added test cases for generation
+  ✓ Added test cases for verification
+  ✓ Committed: b2c3d4e
+
+✅ Stage 2 complete
+```
+
+---
+
+**Step 4.3: Atomic Commits Per Work Item**
+
+Each work item gets its own commit:
+
+**Commit Format**:
+```bash
+git add ${FILES_FOR_THIS_ITEM}
 git commit -m "$(cat <<'EOF'
-feat: Add JWT authentication middleware
+${TYPE}: ${ITEM_NAME}
 
-Implement middleware for JWT token validation:
-- Extract token from Authorization header
-- Verify token signature and expiration
-- Attach user info to request object
-- Handle authentication errors gracefully
+${ITEM_DESCRIPTION}
+
+Changes:
+- ${CHANGE_1}
+- ${CHANGE_2}
+- ${CHANGE_3}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
-
-6. Move to next unit
 ```
 
-**Commit Message Guidelines**:
+**Commit Message Types**:
+- `feat`: New feature or component
+- `test`: Adding tests
+- `refactor`: Code restructuring (later iterations)
+- `fix`: Bug fix (later iterations)
+- `docs`: Documentation
 
+**Examples**:
 ```
-Format: <type>: <short description>
+✓ feat: Add JWT token service with generation and verification
+✓ feat: Add authentication middleware for route protection
+✓ test: Add comprehensive token service test suite
+✓ docs: Document authentication API endpoints
 
-Types:
-- feat: New feature or component
-- refactor: Code restructuring
-- test: Adding tests
-- docs: Documentation
-- fix: Bug fix (usually in later iterations)
-
-Examples:
-✓ feat: Add authentication service with login/register
-✓ feat: Add JWT middleware for route protection
-✓ test: Add authentication flow test cases
-✓ docs: Add authentication API documentation
-
-✗ feat: Add authentication (too vague)
+✗ feat: Add authentication (too vague, doesn't specify component)
 ✗ Update files (not descriptive)
 ```
 
-**Step 4.3: Progress Tracking**
+---
 
-Show progress with each commit:
+**Step 4.4: Summary After All Stages**
 
-```
-✍️ Implementation Progress
+After all stages complete:
 
-Commit 1/6: ✓ feat: Add authentication types and interfaces
-Commit 2/6: ✓ feat: Add User model with password hashing
-Commit 3/6: ✓ feat: Add authentication service
-Commit 4/6: ⏳ feat: Add JWT middleware
-Commit 5/6: ⏳ feat: Add auth API routes
-Commit 6/6: ⏳ test: Add authentication tests
-```
-
-**Step 4.4: Handle Dependencies**
-
-If units have dependencies:
-
-```
-Unit A depends on Unit B:
-1. Implement Unit B first
-2. Commit Unit B
-3. Implement Unit A
-4. Commit Unit A
-
-Example:
-- Middleware depends on Service → Commit Service first
-- Routes depend on Middleware → Commit Middleware first
-```
-
-**Benefits of Multiple Commits**:
-- ✅ Clear git history (each commit = one logical change)
-- ✅ Easier code review (review one component at a time)
-- ✅ Better rollback (can revert specific changes)
-- ✅ Shows progress incrementally
-- ✅ Easier to identify which commit introduced issues
-
-**Final Output**:
 ```
 ✅ Implementation Complete
 
-Created 6 commits:
-- a1b2c3d feat: Add authentication types and interfaces
-- b2c3d4e feat: Add User model with password hashing
-- c3d4e5f feat: Add authentication service
-- d4e5f6a feat: Add JWT middleware
-- e5f6a7b feat: Add auth API routes
-- f6a7b8c test: Add authentication tests
+Execution Summary:
+- Total Stages: 4
+- Total Commits: 11
+- Expected Speedup: 2.75x achieved (conceptually)
+
+Commits Created:
+Stage 1 (Foundation):
+  - a1b2c3d feat: Add User model with OAuth fields
+  - b2c3d4e feat: Add password hashing utilities
+
+Stage 2 (Core Services):
+  - c3d4e5f feat: Add JWT token service
+  - d4e5f6a test: Add token service tests
+
+Stage 3 (Middleware & Endpoints):
+  - e5f6a7b feat: Add authentication middleware
+  - f6a7b8c feat: Add login endpoint
+  - a7b8c9d feat: Add registration endpoint
+  - b8c9d0e feat: Add token refresh endpoint
+
+Stage 4 (Final):
+  - c9d0e1f feat: Add logout endpoint
+  - d0e1f2a test: Add integration tests for auth
+  - e1f2a3b docs: Add authentication API documentation
 
 All commits recorded in TASK_CONTEXT.md
+Moving to review phase...
 ```
 
 **Record all commits in TASK_CONTEXT.md**
