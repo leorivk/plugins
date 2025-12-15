@@ -1,7 +1,7 @@
 {
   "name": "auto-dev",
-  "version": "0.1.0",
-  "description": "Autonomous development workflow with iterative improvement and git worktree isolation",
+  "version": "0.2.0",
+  "description": "Autonomous parallel development with iterative improvement, git worktree isolation, and atomic commits per work item",
   "author": "Your Name",
   "repository": "https://github.com/yourusername/plugins",
   "license": "MIT",

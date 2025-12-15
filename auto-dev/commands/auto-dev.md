@@ -25,8 +25,14 @@ When you run `/auto-dev`, it will:
 ## Usage
 
 ```bash
-# With task description
+# Single task
 /auto-dev "Add user authentication with OAuth 2.0"
+
+# Multiple tasks (comma-separated) - Phase 2
+/auto-dev "Add user auth, Fix login bug, Update API docs"
+
+# Multiple tasks (numbered list) - Phase 2
+/auto-dev "1. Add authentication\n2. Fix bug\n3. Update docs"
 
 # Interactive mode (will prompt for task)
 /auto-dev
